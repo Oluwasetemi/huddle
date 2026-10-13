@@ -1,0 +1,31 @@
+{
+  "name": "huddle",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Huddle — lightweight collaboration for small remote teams (Auth + Channel Messaging MVP)",
+  "scripts": {
+    "dev": "pnpm --filter @huddle/api dev",
+    "dev:api": "pnpm --filter @huddle/api dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:desktop": "cd apps/desktop && cargo run -p huddle-desktop",
+    "build": "pnpm -r build",
+    "build:api": "pnpm --filter @huddle/api build",
+    "build:web": "pnpm --filter web build",
+    "build:desktop": "cd apps/desktop && cargo build --release -p huddle-desktop",
+    "check:desktop": "cd apps/desktop && cargo check -p huddle-ui -p huddle-desktop --locked",
+    "preview:web": "pnpm --filter web preview",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "lint:boundaries": "depcruise \"packages/**/*.ts\" \"apps/api/src/**/*.ts\" --config .dependency-cruiser.cjs",
+    "test": "pnpm -r test",
+    "test:api": "pnpm --filter @huddle/api test",
+    "db:push": "pnpm --filter @huddle/api drizzle-kit push",
+    "db:generate": "pnpm --filter @huddle/api drizzle-kit generate",
+    "db:migrate": "pnpm --filter @huddle/api drizzle-kit migrate"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "dependency-cruiser": "^17.3.0"
+  }
+}

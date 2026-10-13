@@ -1,0 +1,34 @@
+# dev
+.vscode/*
+!.vscode/launch.json
+!.vscode/*.code-snippets
+.idea/
+
+# deps
+node_modules/
+
+# env
+.env
+.env.production
+.env.test.local
+
+# logs
+logs/
+*.log
+
+# db (keep local sqlite out of git; migrations stay in)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+
+# build
+dist/
+target/
+.turbo/
+
+# misc
+.DS_Store
+
+# local cloned skills
+.agents/skills/computer-use/

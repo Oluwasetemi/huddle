@@ -1,0 +1,12 @@
+[package]
+name = "huddle-desktop"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "huddle-desktop"
+path = "src/main.rs"
+
+[dependencies]
+gpui-kit.workspace = true
+huddle-ui.workspace = true

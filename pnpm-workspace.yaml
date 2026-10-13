@@ -1,0 +1,15 @@
+packages:
+  - apps/*
+  - packages/*
+
+shamefullyHoist: false
+strictPeerDependencies: false
+shellEmulator: true
+
+onlyBuiltDependencies:
+  - esbuild
+  - unrs-resolver
+
+allowBuilds:
+  '@apollo/protobufjs': true
+  esbuild: true

@@ -1,0 +1,25 @@
+[workspace]
+resolver = "2"
+members = ["crates/ui", "crates/desktop"]
+default-members = ["crates/desktop"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+
+[workspace.dependencies]
+gpui-kit = "=0.7.0"
+huddle-ui = { path = "crates/ui" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.dev.package]
+gpui-pre = { opt-level = 3 }
+gpui-component = { opt-level = 3 }
+gpui-kit = { opt-level = 3 }
+gpui-kit-assets = { opt-level = 3 }
+gpui-pre-macros = { opt-level = 3 }
+gpui-pre-platform = { opt-level = 3 }
+rustybuzz = { opt-level = 3 }
+taffy = { opt-level = 3 }
+ttf-parser = { opt-level = 3 }

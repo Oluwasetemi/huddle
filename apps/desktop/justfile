@@ -1,0 +1,11 @@
+run:
+    cargo run --release -p huddle-desktop
+
+build:
+    cargo build --release -p huddle-desktop
+
+check:
+    cargo check -p huddle-ui -p huddle-desktop --locked
+
+dev:
+    cargo run -p huddle-desktop

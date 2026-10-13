@@ -1,0 +1,24 @@
+{
+  "name": "@huddle/contracts",
+  "type": "module",
+  "version": "0.1.0",
+  "description": "Shared zod contracts for Huddle (used by api + web)",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@setemiojo/eslint-config": "^9.5.1",
+    "eslint": "^9.39.4",
+    "eslint-plugin-format": "^2.0.1",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
