@@ -3,7 +3,7 @@ mod api;
 use api::{ApiMessage, LoadedWorkspace, WebSocketEvent};
 use gpui_kit::component::{
     button::{Button, ButtonVariants as _},
-    input::{Input, InputContentType, InputState},
+    input::{Input, InputContentType, InputEvent, InputState},
     message_scroller::{MessageScroller, MessageScrollerState},
     sidebar::{Sidebar, SidebarCollapsible, SidebarMenu, SidebarMenuItem},
     Disableable as _, Selectable as _, Sizable as _,
@@ -11,7 +11,7 @@ use gpui_kit::component::{
 use gpui_kit::{
     div, prelude::FluentBuilder as _, px, rgba, AppContext as _, AsyncApp, Context, Entity,
     FontWeight, Hsla, InteractiveElement as _, IntoElement, ParentElement as _, Render,
-    SharedString, Styled as _, WeakEntity, Window,
+    SharedString, Styled as _, Subscription, WeakEntity, Window,
 };
 use serde::Deserialize;
 
@@ -61,6 +61,7 @@ pub struct RootView {
     token: Option<String>,
     socket_generation: u64,
     socket_connected: bool,
+    _subscriptions: Vec<Subscription>,
     name_input: Entity<InputState>,
     email_input: Entity<InputState>,
     password_input: Entity<InputState>,
@@ -71,6 +72,26 @@ impl RootView {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let messages = sample_messages();
         let message_count = messages.len();
+        let name_input = cx.new(|cx| InputState::new(window, cx).placeholder("Name"));
+        let email_input = cx.new(|cx| InputState::new(window, cx).placeholder("Email"));
+        let password_input = cx.new(|cx| InputState::new(window, cx).placeholder("Password"));
+        let composer_input =
+            cx.new(|cx| InputState::new(window, cx).placeholder("Write a message…"));
+        let subscriptions = vec![cx.subscribe_in(
+            &composer_input,
+            window,
+            |this, _, event: &InputEvent, window, cx| {
+                if matches!(
+                    event,
+                    InputEvent::PressEnter {
+                        secondary: false,
+                        ..
+                    }
+                ) {
+                    this.post_message(window, cx);
+                }
+            },
+        )];
 
         Self {
             auth_mode: AuthMode::Login,
@@ -89,11 +110,11 @@ impl RootView {
             token: None,
             socket_generation: 0,
             socket_connected: false,
-            name_input: cx.new(|cx| InputState::new(window, cx).placeholder("Name")),
-            email_input: cx.new(|cx| InputState::new(window, cx).placeholder("Email")),
-            password_input: cx.new(|cx| InputState::new(window, cx).placeholder("Password")),
-            composer_input: cx
-                .new(|cx| InputState::new(window, cx).placeholder("Write a message…")),
+            _subscriptions: subscriptions,
+            name_input,
+            email_input,
+            password_input,
+            composer_input,
         }
     }
 

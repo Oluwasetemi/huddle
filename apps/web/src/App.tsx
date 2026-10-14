@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useHead } from "@unhead/react";
 import { useForesight } from "@foresightjs/react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 
 import {
@@ -67,6 +67,7 @@ function App() {
   const [selectedChannelId, setSelectedChannelId] = useState<number | null>(null);
   const [messageText, setMessageText] = useState("");
   const [socketStatus, setSocketStatus] = useState<SocketStatus>("idle");
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useHead({
     title: session ? "Huddle — Team messages" : "Huddle — Sign in",
@@ -105,6 +106,8 @@ function App() {
     queryFn: () => listMessages(token!, activeChannelId!),
     enabled: Boolean(token && activeChannelId),
   });
+  const messages = messagesQuery.data ?? [];
+  const latestMessageId = messages.at(-1)?.id;
 
   const authMutation = useMutation({
     mutationFn: (formData: FormData) => {
@@ -137,6 +140,17 @@ function App() {
       void queryClient.invalidateQueries({ queryKey: ["channels", token] });
     },
   });
+
+  useLayoutEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container)
+      return;
+
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [activeChannelId, latestMessageId, messages.length]);
 
   useEffect(() => {
     if (!activeChannelId || !token)
@@ -269,10 +283,10 @@ function App() {
           </div>
         </header>
 
-        <div className="messages" aria-live="polite">
+        <div ref={messagesContainerRef} className="messages" role="region" aria-label="Channel messages" aria-live="polite" tabIndex={0}>
           {messagesQuery.isPending ? <p className="muted">Loading messages…</p> : null}
           {messagesQuery.error ? <p className="form-error">{messagesQuery.error.message}</p> : null}
-          {(messagesQuery.data ?? []).map(message => (
+          {messages.map(message => (
             <article key={message.id} className="message-bubble">
               <div>
                 <strong>{message.author.name}</strong>
