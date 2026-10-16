@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Huddle
+Comment=Collaborate with your team
+Exec=huddle
+Icon=com.huddle.desktop
+Terminal=false
+Categories=Network;Chat;
+StartupNotify=true

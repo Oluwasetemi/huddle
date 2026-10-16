@@ -3,8 +3,17 @@ use gpui_kit::{
     TitlebarOptions, WindowBackgroundAppearance, WindowBounds, WindowOptions,
 };
 use huddle_ui::RootView;
+use std::sync::Arc;
 
 actions!(huddle, [Quit]);
+
+fn window_icon() -> Arc<image::RgbaImage> {
+    Arc::new(
+        image::load_from_memory(include_bytes!("../assets/app-icon.png"))
+            .expect("failed to load application icon")
+            .into_rgba8(),
+    )
+}
 
 fn main() {
     gpui_kit::application()
@@ -34,6 +43,7 @@ fn open_main_window(cx: &mut App) {
             window_min_size: Some(size(px(780.), px(520.))),
             window_background: WindowBackgroundAppearance::Blurred,
             app_id: Some("com.huddle.desktop".into()),
+            icon: Some(window_icon()),
             titlebar: Some(TitlebarOptions {
                 title: Some("Huddle".into()),
                 appears_transparent: true,

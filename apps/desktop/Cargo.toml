@@ -8,8 +8,10 @@ version = "0.1.0"
 edition = "2021"
 
 [workspace.dependencies]
+embed-resource = "3.0"
 gpui-kit = "=0.7.0"
 huddle-ui = { path = "crates/ui" }
+image = "0.25"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 

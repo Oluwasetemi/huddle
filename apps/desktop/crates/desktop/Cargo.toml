@@ -10,3 +10,8 @@ path = "src/main.rs"
 [dependencies]
 gpui-kit.workspace = true
 huddle-ui.workspace = true
+image.workspace = true
+
+[target.'cfg(windows)'.build-dependencies]
+embed-resource.workspace = true
+image.workspace = true

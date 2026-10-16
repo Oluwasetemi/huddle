@@ -1,0 +1,185 @@
+name: Desktop Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-release-${{ github.event.release.id }}
+  cancel-in-progress: false
+
+env:
+  VERSION: ${{ github.event.release.tag_name }}
+  INNOSETUP_VERSION: 6.7.1
+  APPIMAGETOOL_VERSION: 1.9.1
+  APPIMAGETOOL_X86_64_SHA256: ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
+
+jobs:
+  build-macos:
+    name: Build macOS ${{ matrix.arch }} DMG
+    runs-on: macos-15
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            target: aarch64-apple-darwin
+          - arch: x86_64
+            target: x86_64-apple-darwin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+        with:
+          toolchain: stable
+          targets: ${{ matrix.target }}
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          workspaces: apps/desktop
+
+      - name: Build DMG
+        run: apps/desktop/scripts/build-macos.sh --version "$VERSION" --arch "${{ matrix.arch }}" --target "${{ matrix.target }}"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: huddle-dmg-${{ matrix.arch }}
+          path: apps/desktop/target/dist/Huddle-${{ env.VERSION }}-macos-${{ matrix.arch }}.dmg
+          if-no-files-found: error
+
+  build-windows:
+    name: Build Windows x64 installer
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+        with:
+          toolchain: stable
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          workspaces: apps/desktop
+
+      - name: Install Inno Setup
+        run: choco install innosetup --version="$env:INNOSETUP_VERSION" --no-progress -y
+
+      - name: Build installer
+        shell: pwsh
+        run: .\apps\desktop\scripts\build-setup.ps1 -Version "${env:VERSION}" -Arch x64 -Target x86_64-pc-windows-msvc
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: huddle-setup-x64
+          path: apps/desktop/target/dist/Huddle-${{ env.VERSION }}-windows-x64-Setup.exe
+          if-no-files-found: error
+
+  build-linux:
+    name: Build Linux x86_64 packages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake clang pkg-config \
+            libfontconfig-dev libwayland-dev libx11-xcb-dev \
+            libxkbcommon-x11-dev libssl-dev libzstd-dev libasound2-dev \
+            libvulkan1 rpm
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+        with:
+          toolchain: stable
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+        with:
+          workspaces: apps/desktop
+
+      - name: Build Linux tarball
+        run: apps/desktop/scripts/build-linux.sh --version "$VERSION" --arch x86_64 --target x86_64-unknown-linux-gnu
+
+      - name: Install appimagetool
+        run: |
+          wget --quiet -O /tmp/appimagetool.AppImage \
+            "https://github.com/AppImage/appimagetool/releases/download/${APPIMAGETOOL_VERSION}/appimagetool-x86_64.AppImage"
+          echo "${APPIMAGETOOL_X86_64_SHA256}  /tmp/appimagetool.AppImage" | sha256sum -c -
+          chmod +x /tmp/appimagetool.AppImage
+          echo "APPIMAGETOOL=/tmp/appimagetool.AppImage" >> "$GITHUB_ENV"
+
+      - name: Build Linux AppImage
+        run: apps/desktop/scripts/build-linux.sh --version "$VERSION" --arch x86_64 --target x86_64-unknown-linux-gnu --format appimage
+
+      - name: Build Linux deb
+        run: apps/desktop/scripts/build-linux.sh --version "$VERSION" --arch x86_64 --target x86_64-unknown-linux-gnu --format deb
+
+      - name: Build Linux rpm
+        run: apps/desktop/scripts/build-linux.sh --version "$VERSION" --arch x86_64 --target x86_64-unknown-linux-gnu --format rpm
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: huddle-linux-x86_64
+          path: |
+            apps/desktop/target/dist/Huddle-${{ env.VERSION }}-linux-x86_64.tar.gz
+            apps/desktop/target/dist/Huddle-${{ env.VERSION }}-linux-x86_64.AppImage
+            apps/desktop/target/dist/Huddle-${{ env.VERSION }}-linux-x86_64.deb
+            apps/desktop/target/dist/Huddle-${{ env.VERSION }}-linux-x86_64.rpm
+          if-no-files-found: error
+
+  attach-release-artifacts:
+    name: Attach desktop artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build-macos, build-windows, build-linux]
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Generate SHA256 checksums
+        run: |
+          cd dist
+          find . -maxdepth 1 -type f \( -name '*.dmg' -o -name '*.exe' -o -name '*.tar.gz' -o -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' \) -print0 \
+            | sort -z \
+            | xargs -0 sha256sum > checksums.txt
+
+      - name: Attach artifacts to release
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
+        with:
+          tag_name: ${{ github.event.release.tag_name }}
+          prerelease: ${{ github.event.release.prerelease }}
+          files: |
+            dist/*.dmg
+            dist/*.exe
+            dist/*.tar.gz
+            dist/*.AppImage
+            dist/*.deb
+            dist/*.rpm
+            dist/checksums.txt
+          fail_on_unmatched_files: true
+          overwrite_files: true
